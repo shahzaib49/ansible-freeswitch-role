@@ -1,0 +1,71 @@
+---
+# tasks file for ansible-freeswitch-role
+- name: Install a list of apt packages
+  package:
+    name: "{{ install_packages }}"
+    state: present
+  tags:
+    - install_packages
+
+- name: Execute the wget command 
+  ansible.builtin.shell: "wget --http-user=signalwire --http-password={{ lookup('ansible.builtin.env', 'TOKEN') }} -O /usr/share/keyrings/signalwire-freeswitch-repo.gpg https://freeswitch.signalwire.com/repo/deb/debian-release/signalwire-freeswitch-repo.gpg"
+
+- name: Insert auth details in apt auth file
+  copy:
+    dest: "/etc/apt/auth.conf"
+    content: |
+      machine freeswitch.signalwire.com login signalwire password {{ lookup('ansible.builtin.env', 'TOKEN') }}
+      
+- name: Insert repo urls in freeswitch repo file
+  copy:
+    dest: /etc/apt/sources.list.d/freeswitch.list
+    content: |
+      deb [signed-by=/usr/share/keyrings/signalwire-freeswitch-repo.gpg] https://freeswitch.signalwire.com/repo/deb/debian-release/ {{ debian_os_name }} main
+      deb-src [signed-by=/usr/share/keyrings/signalwire-freeswitch-repo.gpg] https://freeswitch.signalwire.com/repo/deb/debian-release/ {{ debian_os_name }} main
+
+- name: Update apt
+  become: true
+  apt:
+    update_cache: yes
+
+
+- name: Install the build dependencies for package freeswitch
+  ansible.builtin.apt:
+    pkg: freeswitch
+    state: build-dep
+
+- name: Clone Freeswitch 
+  git:
+   repo: https://github.com/signalwire/freeswitch.git
+   dest: /usr/src/freeswitch
+   version: v1.10
+- name: Run some shell commands in freeswitch src directory
+  ansible.builtin.shell: git config pull.rebase true && ./bootstrap.sh -j
+  args:
+    chdir: /usr/src/freeswitch
+
+- name: Ensure mod_python is enabled
+  ansible.builtin.lineinfile:
+   path: /usr/src/freeswitch/modules.conf
+   regexp: '#languages/mod_python'
+   line: languages/mod_python
+
+
+- name: Run some shell commands in freeswitch src directory
+  ansible.builtin.shell: ./configure --with-python=/usr/bin/python2.7 && make -j{{ ansible_processor_vcpus }} && make install
+  args:
+    chdir: /usr/src/freeswitch
+
+- name: Copy Freeswitch service file
+  ansible.builtin.copy:
+    src: ../files/freeswitch.service
+    dest: /etc/systemd/system/freeswitch.service
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Start freeswitch service on debian
+  ansible.builtin.systemd:
+    name: freeswitch
+    daemon_reload: yes
+    state: started

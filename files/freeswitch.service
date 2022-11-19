@@ -1,0 +1,30 @@
+[Unit]
+Description=freeswitch
+Wants=network-online.target
+Requires=network.target local-fs.target
+After=network.target network-online.target local-fs.target
+
+[Service]
+Type=forking
+PIDFile=/usr/local/freeswitch/run/freeswitch.pid
+Environment="USER=root"
+Environment="GROUP=root"
+ExecStartPre=/bin/chown -R ${USER}:${GROUP} /usr/local/freeswitch/lib /usr/local/freeswitch/log /usr/local/freeswitch/conf /usr/local/freeswitch/run
+ExecStart=/usr/local/freeswitch/bin/freeswitch -u ${USER} -g ${GROUP} -ncwait 
+TimeoutSec=45s
+Restart=never
+LimitCORE=infinity
+LimitNOFILE=100000
+LimitNPROC=60000
+LimitSTACK=250000
+LimitRTPRIO=infinity
+LimitRTTIME=infinity
+IOSchedulingClass=realtime
+IOSchedulingPriority=2
+CPUSchedulingPolicy=rr
+CPUSchedulingPriority=89
+UMask=0007
+NoNewPrivileges=false
+
+[Install]
+WantedBy=multi-user.target

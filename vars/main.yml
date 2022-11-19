@@ -1,0 +1,16 @@
+---
+# vars file for ansible-freeswitch-role
+install_packages:
+  - build-essential
+  - git
+  - make 
+  - cmake
+  - apt-transport-https
+  - ca-certificates
+  - pkg-config
+  - sngrep
+  - gnupg2
+  - wget
+  - lsb-release
+
+debian_os_name: bullseye
