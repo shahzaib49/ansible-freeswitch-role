@@ -17,7 +17,7 @@ Example Playbook
 ----------------
 
 Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
-
+```
 - name: Playbook to install freeswitch from ansible-freeswitch-role
   hosts: dev
   gather_facts: yes
@@ -27,3 +27,4 @@ Including an example of how to use your role (for instance, with variables passe
 
   roles:
     - role: '/root/.ansible/roles/ansible-freeswitch-role'
+```
